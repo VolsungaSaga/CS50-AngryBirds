@@ -16,3 +16,12 @@ function GenerateQuads(atlas, tilewidth, tileheight)
 
     return spritesheet
 end
+
+--Vec2 is a 2D vector, {x,y}
+-- rotationAngle is an angle in radians.
+function RotateVector(vec2, rotationAngle)
+    return {
+        x=vec2.x * math.cos(rotationAngle) + vec2.y * -math.sin(rotationAngle),
+        y=vec2.x * math.sin(rotationAngle) + vec2.y * math.cos(rotationAngle)
+    }
+end

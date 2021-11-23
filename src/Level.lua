@@ -32,6 +32,8 @@ function Level:init()
             local playerFixture = a:getUserData() == 'Player' and a or b
             local obstacleFixture = a:getUserData() == 'Obstacle' and a or b
             
+            -- Mark an obstacle collision, so we can forbid spawning new aliens afterwards.
+            self.playerHasCollided = true
             -- destroy the obstacle if player's combined X/Y velocity is high enough
             local velX, velY = playerFixture:getBody():getLinearVelocity()
             local sumVel = math.abs(velX) + math.abs(velY)
@@ -100,6 +102,11 @@ function Level:init()
 
     -- shows alien before being launched and its trajectory arrow
     self.launchMarker = AlienLaunchMarker(self.world)
+
+    --Extra player aliens, spawned when the player presses the spacebar.
+    self.extraPlayerAliens = {}
+    self.playerHasCollided = false
+    self.playerAliensSpawned = false
 
     -- aliens in our scene
     self.aliens = {}
@@ -170,11 +177,34 @@ function Level:update(dt)
         end
     end
 
+    for i = #self.extraPlayerAliens, 1, -1 do
+        if self.extraPlayerAliens[i].body:isDestroyed() then
+            table.remove(self.extraPlayerAliens, i)
+            gSounds['kill']:stop()
+            gSounds['kill']:play()
+        end
+    end
+
     -- replace launch marker if original alien stopped moving
     if self.launchMarker.launched then
         local xPos, yPos = self.launchMarker.alien.body:getPosition()
         local xVel, yVel = self.launchMarker.alien.body:getLinearVelocity()
-        
+        -- The magic happens here, after launching.
+        if love.keyboard.wasPressed('space') and not self.playerAliensSpawned and not self.playerHasCollided then
+            local topAlienVel = RotateVector({x=xVel, y=yVel}, -10 * DEGREES_TO_RADIANS)
+            local bottomAlienVel = RotateVector({x=xVel, y=yVel}, 10 * DEGREES_TO_RADIANS)
+
+            print("topVel: {"..topAlienVel.x..","..topAlienVel.y.."}")
+
+            self:spawnNewPlayerAlien(xPos, yPos, topAlienVel.x, topAlienVel.y)
+            self:spawnNewPlayerAlien(xPos, yPos, bottomAlienVel.x, bottomAlienVel.y)
+
+            self.playerAliensSpawned = true
+
+
+        end
+
+
         -- if we fired our alien to the left or it's almost done rolling, respawn
         if xPos < 0 or (math.abs(xVel) + math.abs(yVel) < 1.5) then
             self.launchMarker.alien.body:destroy()
@@ -201,6 +231,10 @@ function Level:render()
         alien:render()
     end
 
+    for k, playerAlien in pairs(self.extraPlayerAliens) do
+        playerAlien:render()
+    end
+
     for k, obstacle in pairs(self.obstacles) do
         obstacle:render()
     end
@@ -221,4 +255,12 @@ function Level:render()
         love.graphics.printf('VICTORY', 0, VIRTUAL_HEIGHT / 2 - 32, VIRTUAL_WIDTH, 'center')
         love.graphics.setColor(1, 1, 1, 1)
     end
+end
+
+
+function Level:spawnNewPlayerAlien(x,y, dx, dy)
+    local newAlien = Alien(self.world, 'circle', x, y, 'Player')
+    newAlien.body:setLinearVelocity(dx,dy)
+    table.insert(self.extraPlayerAliens, newAlien)
+
 end
