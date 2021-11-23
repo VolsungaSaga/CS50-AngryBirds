@@ -189,10 +189,10 @@ function Level:update(dt)
     if self.launchMarker.launched then
         local xPos, yPos = self.launchMarker.alien.body:getPosition()
         local xVel, yVel = self.launchMarker.alien.body:getLinearVelocity()
-        -- The magic happens here, after launching.
+        -- The spawning magic happens here, after launching.
         if love.keyboard.wasPressed('space') and not self.playerAliensSpawned and not self.playerHasCollided then
-            local topAlienVel = RotateVector({x=xVel, y=yVel}, -10 * DEGREES_TO_RADIANS)
-            local bottomAlienVel = RotateVector({x=xVel, y=yVel}, 10 * DEGREES_TO_RADIANS)
+            local topAlienVel = RotateVector({x=xVel, y=yVel}, -20 * DEGREES_TO_RADIANS)
+            local bottomAlienVel = RotateVector({x=xVel, y=yVel}, 20 * DEGREES_TO_RADIANS)
 
             print("topVel: {"..topAlienVel.x..","..topAlienVel.y.."}")
 
@@ -204,12 +204,28 @@ function Level:update(dt)
 
         end
 
+        --Because we put the extras in a seperate table, we have to examine their velocities seperately.
+        local extrasStopped = lume.any(self.extraPlayerAliens,
+        function (alien)
+            local alienVelX, alienVelY = alien.body:getLinearVelocity()
+            if alienVelX < 1.5 then
+                return true
+            end
+        end)
 
         -- if we fired our alien to the left or it's almost done rolling, respawn
-        if xPos < 0 or (math.abs(xVel) + math.abs(yVel) < 1.5) then
+        if xPos < 0 or ((math.abs(xVel) + math.abs(yVel) < 1.5) and extrasStopped) then
             self.launchMarker.alien.body:destroy()
             self.launchMarker = AlienLaunchMarker(self.world)
 
+            --Reset everything.
+            for _, extraAlien in pairs(self.extraPlayerAliens) do
+                extraAlien.body:destroy()
+            end
+
+            self.extraPlayerAliens = {}
+            self.playerAliensSpawned = false
+            self.playerHasCollided = false
             -- re-initialize level if we have no more aliens
             if #self.aliens == 0 then
                 gStateMachine:change('start')

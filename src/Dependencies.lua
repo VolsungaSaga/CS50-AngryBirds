@@ -9,6 +9,8 @@
 Class = require 'lib/class'
 push = require 'lib/push'
 Timer = require 'lib/knife.timer'
+lume = require 'lib/lume'
+
 
 require 'src/Alien'
 require 'src/AlienLaunchMarker'

@@ -28,7 +28,13 @@ function Alien:init(world, type, x, y, userData)
     self.fixture = love.physics.newFixture(self.body, self.shape)
 
     self.fixture:setUserData(userData)
-
+    if userData == "Player" then
+        
+        --Ensures that, if the Alien is instantiated as a "Player" alien, then they won't collide with each other.
+        self.fixture:setCategory(2)
+        self.fixture:setMask(2)
+    
+    end
     -- used to keep track of despawning the Alien and flinging it
     self.launched = false
 end
